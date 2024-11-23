@@ -9,6 +9,12 @@ A microservice for simple iot backend handling sensors data operation.
 1. Node.js (version >= 16)
 2. MongoDB (Tested on 8.0)
 
+## Planning Features
+
+- :black_square_button: Dockerize
+- :black_square_button: MQTT Support
+- :black_square_button: Aggregate Sensor Data
+
 ## Project setup
 
 1. Clone this project and install node.js packages
