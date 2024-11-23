@@ -11,7 +11,7 @@ A microservice for simple iot backend handling sensors data operation.
 
 ## Planning Features
 
-- :black_square_button: Dockerize
+- :white_check_mark: Dockerize
 - :black_square_button: MQTT Support
 - :black_square_button: Aggregate Sensor Data
 
