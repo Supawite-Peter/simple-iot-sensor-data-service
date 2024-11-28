@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory, raw } from '@nestjs/mongoose';
-import { Date, HydratedDocument } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 
 export type DataDocument = HydratedDocument<Data>;
 
@@ -8,12 +8,6 @@ export type DataDocument = HydratedDocument<Data>;
     timeField: 'timestamp',
     metaField: 'metadata',
     granularity: 'minutes',
-  },
-  toObject: {
-    transform: function (doc, ret) {
-      delete ret.__v;
-      delete ret._id;
-    },
   },
 })
 export class Data {
