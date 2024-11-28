@@ -4,7 +4,8 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
 import { Model } from 'mongoose';
 import { Data } from './schemas/data.schema';
-import { DataPayloadInterface } from './interfaces/data.payload.interface';
+import { DataUpdateInterface } from './interfaces/data.update.interface';
+import { DataQueryInterface } from './interfaces/data.query.interface';
 
 @Injectable()
 export class SensorsDataService {
@@ -17,8 +18,8 @@ export class SensorsDataService {
   async updateData(
     deviceId: number,
     topic: string,
-    payload: DataPayloadInterface | DataPayloadInterface[],
-  ): Promise<Data | Data[]> {
+    payload: DataUpdateInterface | DataUpdateInterface[],
+  ): Promise<DataUpdateInterface[]> {
     if (Array.isArray(payload)) {
       if (payload.length === 1) {
         return await this.updateSingleData(deviceId, topic, payload[0]);
@@ -33,30 +34,29 @@ export class SensorsDataService {
   private async updateSingleData(
     deviceId: number,
     topic: string,
-    payload: DataPayloadInterface,
+    payload: DataUpdateInterface,
   ) {
-    return (
-      await this.dataModel.create({
-        timestamp: payload.timestamp || new Date(),
-        metadata: {
-          deviceId: deviceId,
-          topic: topic,
-        },
-        value: payload.value,
-      })
-    ).toObject();
+    const doc = await this.dataModel.create({
+      timestamp: payload.timestamp || new Date(),
+      metadata: {
+        deviceId: deviceId,
+        topic: topic,
+      },
+      value: payload.value,
+    });
+
+    return [this.toDataPayload(doc)];
   }
 
   private async updateMultipleData(
     deviceId: number,
     topic: string,
-    payloads: DataPayloadInterface[],
+    payloads: DataUpdateInterface[],
   ) {
     const dataToInsert = [];
-    const currentDate = new Date();
     for (const payload of payloads) {
       dataToInsert.push({
-        timestamp: payload.timestamp || currentDate,
+        timestamp: payload.timestamp || new Date(),
         metadata: {
           deviceId: deviceId,
           topic: topic,
@@ -64,12 +64,26 @@ export class SensorsDataService {
         value: payload.value,
       });
     }
-    return this.dataModel.insertMany(dataToInsert).then((docs) => {
-      return docs.map((doc) => doc.toObject());
-    });
+
+    const docs = await this.dataModel.insertMany(dataToInsert);
+
+    return docs.map((doc) => this.toDataPayload(doc as Data));
   }
 
-  async getLatestData(deviceId: number, topic: string): Promise<Data> {
+  async getLatestData(
+    deviceId: number,
+    topic: string,
+    unix: boolean = false,
+  ): Promise<DataQueryInterface> {
+    const docs = await this.queryLatestData(deviceId, topic);
+
+    if (docs.length === 0)
+      throw new RpcException(new NotFoundException('No Latest Data Found'));
+
+    return this.toDataPayload(docs[0], unix);
+  }
+
+  private queryLatestData(deviceId: number, topic: string): Promise<Data[]> {
     return this.dataModel
       .find({
         'metadata.deviceId': deviceId,
@@ -77,20 +91,31 @@ export class SensorsDataService {
       })
       .sort({ timestamp: -1 })
       .limit(1)
-      .exec()
-      .then((docs) => {
-        if (docs.length === 0) {
-          throw new RpcException(new NotFoundException('No Latest Data Found'));
-        }
-        return docs[0].toObject();
-      });
+      .exec();
   }
 
   async getPeriodicData(
     deviceId: number,
     topic: string,
-    from: string | Date,
-    to: string | Date,
+    from: string | Date | number,
+    to: string | Date | number,
+    unix: boolean = false,
+  ): Promise<DataQueryInterface[]> {
+    const docs = await this.queryPeriodicData(deviceId, topic, from, to);
+
+    if (docs.length === 0)
+      throw new RpcException(
+        new NotFoundException('No Data Found From The Given Period'),
+      );
+
+    return docs.map((doc) => this.toDataPayload(doc, unix));
+  }
+
+  private queryPeriodicData(
+    deviceId: number,
+    topic: string,
+    from: string | Date | number,
+    to: string | Date | number,
   ): Promise<Data[]> {
     return this.dataModel
       .find({
@@ -99,15 +124,7 @@ export class SensorsDataService {
         'metadata.topic': topic,
       })
       .sort({ timestamp: -1 })
-      .exec()
-      .then((docs) => {
-        if (docs.length === 0) {
-          throw new RpcException(
-            new NotFoundException('No Data Found From The Given Period'),
-          );
-        }
-        return docs.map((doc) => doc.toObject());
-      });
+      .exec();
   }
 
   async checkDeviceTopic(
@@ -121,5 +138,12 @@ export class SensorsDataService {
       .send(pattern, payload)
       .pipe(catchError((err) => throwError(() => new RpcException(err))));
     return firstValueFrom(source);
+  }
+
+  private toDataPayload(data: Data, unix: boolean = false): DataQueryInterface {
+    return {
+      timestamp: unix ? data.timestamp.getTime() : data.timestamp.toISOString(),
+      value: data.value,
+    };
   }
 }
