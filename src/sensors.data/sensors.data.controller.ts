@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SensorsDataService } from './sensors.data.service';
-import { DataPayloadInterface } from './interfaces/data.payload.interface';
+import { DataUpdateInterface } from './interfaces/data.update.interface';
 
 @Controller('sensorsData')
 export class SensorsDataController {
@@ -19,7 +19,7 @@ export class SensorsDataController {
       userId: number;
       deviceId: number;
       deviceTopic: string;
-      dataPayload: DataPayloadInterface | DataPayloadInterface[];
+      dataPayload: DataUpdateInterface | DataUpdateInterface[];
     },
   ) {
     await this.sensorsDataService.checkDeviceTopic(
@@ -41,10 +41,12 @@ export class SensorsDataController {
       userId,
       deviceId,
       deviceTopic,
+      unix,
     }: {
       userId: number;
       deviceId: number;
       deviceTopic: string;
+      unix?: boolean; // if true, return unix timestamp else return ISO timestamp
     },
   ) {
     await this.sensorsDataService.checkDeviceTopic(
@@ -52,7 +54,7 @@ export class SensorsDataController {
       deviceId,
       deviceTopic,
     );
-    return this.sensorsDataService.getLatestData(deviceId, deviceTopic);
+    return this.sensorsDataService.getLatestData(deviceId, deviceTopic, unix);
   }
 
   @MessagePattern({ cmd: 'sensors.data.get.periodic' })
@@ -64,12 +66,14 @@ export class SensorsDataController {
       deviceTopic,
       from,
       to,
+      unix,
     }: {
       userId: number;
       deviceId: number;
       deviceTopic: string;
-      from: string | Date;
-      to: string | Date;
+      from: string | number;
+      to: string | number;
+      unix?: boolean; // if true, return unix timestamp else return ISO timestamp
     },
   ) {
     await this.sensorsDataService.checkDeviceTopic(
@@ -82,6 +86,7 @@ export class SensorsDataController {
       deviceTopic,
       from,
       to,
+      unix,
     );
   }
 }
