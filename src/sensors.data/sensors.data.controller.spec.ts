@@ -39,7 +39,7 @@ describe('SensorsDataController', () => {
         deviceId: 1,
         deviceTopic: 'topic1',
         dataPayload: {
-          timestamp: new Date(),
+          timestamp: Date.now(),
           value: 1,
         },
       };
@@ -59,7 +59,7 @@ describe('SensorsDataController', () => {
         deviceId: 1,
         deviceTopic: 'topic1',
         dataPayload: {
-          timestamp: new Date(),
+          timestamp: Date.now(),
           value: 1,
         },
       };
@@ -120,8 +120,8 @@ describe('SensorsDataController', () => {
         userId: 1,
         deviceId: 1,
         deviceTopic: 'topic1',
-        from: new Date(Date.now() - 10000),
-        to: new Date(),
+        from: Date.now() - 10000,
+        to: Date.now(),
       };
 
       // Act & Assert
@@ -138,8 +138,8 @@ describe('SensorsDataController', () => {
         userId: 1,
         deviceId: 1,
         deviceTopic: 'topic1',
-        from: new Date(Date.now() - 10000),
-        to: new Date(),
+        from: Date.now() - 10000,
+        to: Date.now(),
       };
       jest
         .spyOn(service, 'checkDeviceTopic')
