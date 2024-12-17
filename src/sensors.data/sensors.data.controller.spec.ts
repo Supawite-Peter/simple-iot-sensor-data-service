@@ -76,6 +76,51 @@ describe('SensorsDataController', () => {
     });
   });
 
+  describe('sensors.data.update (event)', () => {
+    it('should check device topic and pass data to service.updateData', async () => {
+      // Arrange
+      const input = {
+        userId: 1,
+        deviceId: 1,
+        deviceTopic: 'topic1',
+        dataPayload: {
+          timestamp: Date.now(),
+          value: 1,
+        },
+      };
+
+      // Act
+      await controller.updateDataEvent(input);
+
+      // Assert
+      expect(service.checkDeviceTopic).toHaveBeenCalled();
+      expect(service.updateData).toHaveBeenCalled();
+    });
+
+    it('should stop execution if check device topic fails', async () => {
+      // Arrange
+      const input = {
+        userId: 1,
+        deviceId: 1,
+        deviceTopic: 'topic1',
+        dataPayload: {
+          timestamp: Date.now(),
+          value: 1,
+        },
+      };
+      jest
+        .spyOn(service, 'checkDeviceTopic')
+        .mockRejectedValueOnce(new Error('Invalid Topic'));
+
+      // Act & Assert
+      await expect(controller.updateDataEvent(input)).rejects.toThrow(
+        new Error('Invalid Topic'),
+      );
+      expect(service.checkDeviceTopic).toHaveBeenCalled();
+      expect(service.updateData).not.toHaveBeenCalled();
+    });
+  });
+
   describe('sensors.data.get.latest', () => {
     it('should check device topic and pass data to service.getLatestData', async () => {
       // Arrange

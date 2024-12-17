@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { SensorsDataService } from './sensors.data.service';
 import { DataUpdateInterface } from './interfaces/data.update.interface';
 
@@ -32,6 +32,29 @@ export class SensorsDataController {
       deviceTopic,
       dataPayload,
     );
+  }
+
+  @EventPattern({ event: 'sensor.data.update' })
+  async updateDataEvent(
+    @Payload()
+    {
+      userId,
+      deviceId,
+      deviceTopic,
+      dataPayload,
+    }: {
+      userId: number;
+      deviceId: number;
+      deviceTopic: string;
+      dataPayload: DataUpdateInterface | DataUpdateInterface[];
+    },
+  ) {
+    await this.sensorsDataService.checkDeviceTopic(
+      userId,
+      deviceId,
+      deviceTopic,
+    );
+    this.sensorsDataService.updateData(deviceId, deviceTopic, dataPayload);
   }
 
   @MessagePattern({ cmd: 'sensors.data.get.latest' })
